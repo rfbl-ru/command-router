@@ -1,0 +1,19 @@
+{
+    "commands": {
+        "cmd1": [
+          {"playerId":"1", "topic":"MIPT-SportRoboticsClub/LunokhodFootball/Robots/1", "mac":""},
+          {"playerId":"2", "topic":"MIPT-SportRoboticsClub/LunokhodFootball/Robots/2", "mac":""}
+        ],
+        "cmd2": [
+            {"playerId":"3", "topic":"MIPT-SportRoboticsClub/LunokhodFootball/Robots/3", "mac":""},
+          	{"playerId":"4", "topic":"MIPT-SportRoboticsClub/LunokhodFootball/Robots/4", "mac":""}
+        ]
+    },
+  "cameras": [
+    {"x": 72, "y": 169, "address": "1"}, 
+    {"x": 180, "y": 180, "address": "2"}, 
+    {"x": 77, "y": 32, "address": "3"}, 
+    {"x": 201, "y": 201, "address": "4"}
+
+  ]
+}

@@ -9,45 +9,46 @@ topics = []
 bd_addr = []
 sockets = {}
 
-login = "mqtt_login"
-password = "mqtt_pwd"
+login = "app"
+password = "ss8Brl9UcW"
 
-server = "host"
+server = "82.146.32.180"
 
 millis1 = []
 millis2 = []
 
+topicStatus = "MIPT-SportRoboticsClub/LunokhodFootball/Robots/Status/{0}"
+
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
+    client.subscribe("MIPT-SportRoboticsClub/LunokhodFootball/Internal/#")
 
     for i in range(num):
         client.subscribe(topics[i])
-        client.subscribe(topics[i] + '/server')
-        client.subscribe(topics[i] + '/addMac')
         millis1.append(1)
         millis2.append(1)
 
 
 def on_message(client, userdata, msg):
-    tosend = str(msg.payload)
-    tosend = tosend[2:len(tosend) - 1]
     topic = str(msg.topic)
-    print(tosend)
-    if topic.find('server') > -1 and tosend.find('cams') > -1:
-        pld = ', '.join(map(str, cams))
-        pld = pld.replace('\'', '"')
-        client.publish(msg.topic, "[" + pld + "]")
-    elif topic.find('addMac') > -1:
-        pass
-    elif topic.find('/') > -1:
-        pass
-    else:
-        print(tosend)
+    rec = str(msg.payload)[2:-1]
+
+    if "Internal" in topic:
+        jsonMessage = json.loads(rec)
+        if jsonMessage['command'] == "getConfig":
+            playerId = topic.split("/")[-1]
+            with open('gameConfiguration/config.json', 'r+', encoding='utf-8') as f:
+                gameConfig = json.load(f)
+            client.publish("MIPT-SportRoboticsClub/LunokhodFootball/Data/{0}".format(playerId), json.dumps(gameConfig))
+    elif "Robots" in topic:
+        print(rec)
         try:
-            sockets[msg.topic].send(tosend + "\n")
+            sockets[topic].send(rec + "\n")
         except:
-            client.publish(msg.topic + "/status", "204")
+            data_ = {"status" : "204"}
+            client.publish(topic + "/status", json.dumps(data_))
+            # client.publish(topicInternalData.format)
 
 
 def connect():
@@ -56,9 +57,11 @@ def connect():
         try:
             sock.connect((bd_addr[i], port))
             sock.setblocking(False)
-            client.publish(topics[i] + "/status", "200")
+            data_ = {"status" : "200"}
+            client.publish(topics[i] + "/status", json.dumps(data_))
         except:
-            client.publish(topics[i] + "/status", "202")
+            data_ = {"status" : "204"}
+            client.publish(topics[i] + "/status", json.dumps(data_))
         sockets[topics[i]] = sock
     print("connection done")
 
@@ -69,16 +72,19 @@ def bl_reconnect():
             try:
                 sockets[topics[i]].getpeername()
             except:
-                client.publish(topics[i] + "/status", "203")
+                data_ = {"status" : "203"}
+                client.publish(topics[i] + "/status", json.dumps(data_))
                 try:
                     sockets[topics[i]].close()
                     sockets[topics[i]] = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
                     sockets[topics[i]].connect((bd_addr[i], 1))
                     print("Connected")
-                    client.publish(topics[i] + "/status", "200")
+                    data_ = {"status" : "200"}
+                    client.publish(topics[i] + "/status", json.dumps(data_))
                 except Exception as e:
                     print(e)
-                    client.publish(topics[i] + "/status", "202")
+                    data_ = {"status" : "202"}
+                    client.publish(topics[i] + "/status", json.dumps(data_))
                     print("Connection error")
         time.sleep(0.1)
 
@@ -91,7 +97,8 @@ def hb():
                 millis1[i] = int(round(time.time() * 1000))
             except Exception as e:
                 print(e)
-                client.publish(topics[i] + "/status", "204")
+                data_ = {"status" : "204"}
+                client.publish(topics[i] + "/status", json.dumps(data_))
         time.sleep(5)
 
 
@@ -107,7 +114,8 @@ def hb_rec():
                     print(millis2[i] - millis1[i])
                     client.publish(topics[i] + "/time", str(millis2[i] - millis1[i]))
                 if msg == "l":
-                    client.publish(topics[i] + "/status", "201")
+                    data_ = {"status" : "201"}
+                    client.publish(topics[i] + "/status", json.dumps(data_))
             except:
                 pass
 
@@ -118,19 +126,19 @@ client.on_message = on_message
 client.username_pw_set(login, password=password)
 client.connect(server, 1883, 60)
 
-with open('config.json', 'r', encoding='utf-8') as f:
-    text = json.load(f)
-
-with open('camsConfig.json', 'r', encoding='utf-8') as f:
-    cams = json.load(f)
+with open('gameConfiguration/config.json', 'r+', encoding='utf-8') as f:
+    gameConfig = json.load(f)
 
 num = 0
 
-for cmd in text['commands']:
-    num += 1
-    topics.append(cmd['topic'])
-    bd_addr.append(cmd['mac'])
-text = ""
+for command in gameConfig['commands']:
+
+    for player in gameConfig['commands'][command]:
+        print("Player:", player)
+        num += 1
+        topics.append(player['topic'])
+        bd_addr.append(player['mac'])
+
 
 connectThread = threading.Thread(target=connect, args=(), daemon=True)
 connectThread.start()
