@@ -9,10 +9,10 @@ topics = []
 bd_addr = []
 sockets = {}
 
-login = "app"
-password = "ss8Brl9UcW"
+login = "login"
+password = "pass"
 
-server = "82.146.32.180"
+server = "localhost"
 
 millis1 = []
 millis2 = []
